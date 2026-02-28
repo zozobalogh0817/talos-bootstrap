@@ -1,0 +1,70 @@
+name: Release cluster manifests
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate manifest files exist
+        run: |
+          set -euo pipefail
+          test -d cluster-manifests
+          ls -la cluster-manifests
+
+          REQUIRED=(
+            "cluster-manifests/argocd-controller-crb.yaml"
+            "cluster-manifests/argocd-installer.yaml"
+            "cluster-manifests/argocd-namespace.yaml"
+          )
+
+          for f in "${REQUIRED[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "Missing required file: $f"
+              exit 1
+            fi
+          done
+
+      - name: Prepare release assets
+        run: |
+          set -euo pipefail
+
+          TAG="${GITHUB_REF_NAME}"
+          OUT="dist/${TAG}"
+          mkdir -p "${OUT}"
+
+          # Copy YAMLs
+          cp -v cluster-manifests/*.yaml "${OUT}/"
+
+          # Generate per-file checksums
+          (cd "${OUT}" && sha256sum *.yaml | tee checksums.sha256)
+
+          # Also create a tar.gz bundle (handy for downloads)
+          tar -C "dist" -czf "${OUT}.tar.gz" "${TAG}"
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/${{ github.ref_name }}/*.yaml
+            dist/${{ github.ref_name }}/checksums.sha256
+            dist/${{ github.ref_name }}.tar.gz
