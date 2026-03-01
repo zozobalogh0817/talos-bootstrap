@@ -32,6 +32,7 @@ jobs:
             "cluster-manifests/argocd-controller-crb.yaml"
             "cluster-manifests/argocd-installer.yaml"
             "cluster-manifests/argocd-namespace.yaml"
+            "cluster-manifests/cilium.yaml"
           )
 
           for f in "${REQUIRED[@]}"; do
@@ -63,7 +64,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          generate_release_notes: true
+          generate_release_notes: false
           files: |
             dist/${{ github.ref_name }}/*.yaml
             dist/${{ github.ref_name }}/checksums.sha256
