@@ -33,6 +33,7 @@ jobs:
             "cluster-manifests/argocd-installer.yaml"
             "cluster-manifests/argocd-namespace.yaml"
             "cluster-manifests/cilium.yaml"
+            "cluster-manifests/gateway-api-crds.yaml"
           )
 
           for f in "${REQUIRED[@]}"; do
